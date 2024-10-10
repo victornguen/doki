@@ -3,10 +3,15 @@ extern crate rocket;
 mod services;
 mod settings;
 
+mod api;
+
+use crate::services::auth::BasicAuthorizer;
+use crate::services::s3::Downloader;
 use crate::settings::settings::Settings;
 use clap::{Arg, Command};
 use rocket::fs::FileServer;
 use rocket::Config;
+use std::sync::Arc;
 // use rocket_dyn_templates::Template;
 
 #[get("/")]
@@ -27,7 +32,7 @@ async fn rocket() -> _ {
 
     let matches = command.get_matches();
     let config_location = matches.get_one::<String>("config").unwrap_or(&"".to_string()).to_string();
-    let settings = Settings::new(&config_location, "TRANSCRIBE").expect("Failed to load settings");
+    let settings = Settings::new(&config_location, "DOKI").expect("Failed to load settings");
 
     let config = Config {
         port: settings.server.port as u16,
@@ -48,5 +53,8 @@ async fn rocket() -> _ {
     rocket::build()
         // .configure(config)
         .mount("/", FileServer::from(local_dir.join("static")))
+        .mount("/api/admin", routes![api::admin::update])
+        .attach(Downloader::manage(downloader))
+        .attach(BasicAuthorizer::managed(settings.auth))
     // .attach(Template::fairing())
 }

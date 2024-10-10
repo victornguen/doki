@@ -1,9 +1,11 @@
 use anyhow::Context;
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
+use rocket::fairing::AdHoc;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
+#[derive(Clone)]
 pub struct Downloader {
     client: Client,
 }
@@ -44,6 +46,20 @@ impl Downloader {
         }
 
         Ok(())
+    }
+
+    pub fn manage(downloader: Downloader) -> AdHoc {
+        AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
+            // let downloader = Downloader::new().await;
+            rocket.manage(downloader)
+        })
+    }
+
+    pub fn managed() -> AdHoc {
+        AdHoc::on_ignite("S3 Downloader", |rocket| async move {
+            let downloader = Downloader::new().await;
+            rocket.manage(downloader)
+        })
     }
 
     // AWS_ENDPOINT_URL_S3
