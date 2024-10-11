@@ -3,3 +3,6 @@ server:
   port: 8000
 logging:
   log_level: DEBUG
+s3:
+  bucket: aggapi-documentation
+  local_dir: www/public

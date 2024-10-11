@@ -12,7 +12,6 @@ use clap::{Arg, Command};
 use rocket::fs::FileServer;
 use rocket::Config;
 use std::sync::Arc;
-// use rocket_dyn_templates::Template;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -40,21 +39,15 @@ async fn rocket() -> _ {
         ..Config::debug_default()
     };
 
-    let downloader = services::s3::Downloader::new().await;
-    println!("Connected to S3");
-
-    println!("Downloading directory");
-
     // get current directory
-    let local_dir = std::env::current_dir().expect("Failed to get current directory");
-
-    downloader.download_directory("aggapi-documentation", local_dir.join("static").to_str().unwrap()).await.expect("Failed to download directory");
+    let local_dir = std::env::current_dir().expect("Failed to get current directory").join("www/public");
 
     rocket::build()
         // .configure(config)
-        .mount("/", FileServer::from(local_dir.join("static")))
+        .mount("/", FileServer::from(local_dir.clone()))
         .mount("/api/admin", routes![api::admin::update])
-        .attach(Downloader::manage(downloader))
-        .attach(BasicAuthorizer::managed(settings.auth))
+        .attach(Downloader::managed(settings.s3.bucket.to_string(), local_dir.clone().to_str().expect("Failed to get static directory").to_string()))
+        .attach(BasicAuthorizer::managed(settings.auth.clone()))
+        .attach(Settings::manage(settings.clone()))
     // .attach(Template::fairing())
 }
