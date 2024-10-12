@@ -5,4 +5,6 @@ logging:
   log_level: DEBUG
 s3:
   bucket: aggapi-documentation
+fs:
   local_dir: www/public
+  statics: site

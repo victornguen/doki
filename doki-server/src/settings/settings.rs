@@ -21,7 +21,13 @@ pub struct Logging {
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct S3 {
     pub bucket: String,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct FS {
     pub local_dir: String,
+    pub temp_dir: String,
+    pub statics: String,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -30,6 +36,7 @@ pub struct Settings {
     pub logging: Logging,
     pub auth: Auth,
     pub s3: S3,
+    pub fs: FS,
 }
 
 impl Settings {

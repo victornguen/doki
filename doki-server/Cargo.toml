@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rocket = { version = "0.5.1", features = ["tls", "json", "serde_json"] }
+rocket = { version = "0.5.1", features = ["tls", "json", "serde_json", "default"] }
 rocket_dyn_templates = { version = "0.2.0", features = ["handlebars", "tera"] }
 tokio = { version = "1.40.0", features = ["full"] }
+tokio-util = { version = "0.7", features = ["full"] }
 aws-config = "1.5.8"
-aws-sdk-s3 = "1.54.0"
+aws-sdk-s3 = { version = "1.54.0", features = ["rt-tokio"] }
 dotenv = "0.15.0"
 config = "0.14.0"
 clap = { version = "4.5", features = ["derive"] }
@@ -18,3 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 base64 = "0.21.7"
 log = "0.4.22"
+flate2 = { version = "1.0.34" }
+tar = "0.4.42"
+uuid = { version = "1.10.0", features = ["v4"] }
+unrar = "0.5.6"

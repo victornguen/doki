@@ -1,5 +1,4 @@
 use crate::settings::settings::Auth;
-use anyhow::Context;
 use rocket::http::Status;
 use rocket::outcome::IntoOutcome;
 use rocket::request::{FromRequest, Outcome, Request};

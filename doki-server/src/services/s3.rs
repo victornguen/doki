@@ -3,6 +3,8 @@ use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
 use log::{log, Level};
 use rocket::fairing::AdHoc;
+use rocket::futures::future::join_all;
+use std::sync::Arc;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
@@ -16,7 +18,7 @@ pub struct Downloader {
 impl Downloader {
     pub async fn clean_download(&self) -> Result<(), anyhow::Error> {
         self.clear_dir()?;
-        self.download_directory(self.bucket.as_str(), self.local_dir.as_str()).await
+        self.clone().download_directory(self.bucket.as_str(), self.local_dir.as_str()).await
     }
 
     async fn download_directory(&self, bucket: &str, local_dir: &str) -> Result<(), anyhow::Error> {
@@ -26,33 +28,49 @@ impl Downloader {
             .send()
             .await?;
 
+        let downloader = Arc::new(self.clone());
+        let local_dir = Arc::new(local_dir.to_string());
+
         if let Some(contents) = list_objects.contents {
+            let mut tasks = Vec::new();
             for object in contents {
                 if let Some(key) = object.key {
-                    let get_object = self.client.get_object()
-                        .bucket(bucket)
-                        .key(&key)
-                        .send()
-                        .await
-                        .context("send get object request")?;
-                    let body = get_object
-                        .body
-                        .collect()
-                        .await
-                        .context("collect body")?;
-                    let local_path = format!("{}/{}", local_dir.replace("/", "\\"), key);
-                    log!(Level::Info, "Downloading {} to {}", key, local_path);
-                    //create subdirectories if they don't exist
-                    let local_path = std::path::Path::new(&local_path);
-                    if let Some(parent) = local_path.parent() {
-                        std::fs::create_dir_all(parent).context("create directory")?;
-                    }
-                    let mut file = File::create(local_path).await.context("create file")?;
-                    file.write_all(&body.into_bytes()).await.context("write to file")?;
+                    let s = Arc::clone(&downloader);
+                    let bucket = bucket.to_string();
+                    let key = key.clone();
+                    let local_dir = Arc::clone(&local_dir);
+                    tasks.push(
+                        tokio::spawn(async move {
+                            s.download_file(bucket, key, &local_dir).await
+                        })
+                    );
                 }
             }
+            join_all(tasks).await.into_iter().collect::<Result<Vec<_>, _>>()?;
         }
 
+        Ok(())
+    }
+    async fn download_file(&self, bucket: String, key: String, local_dir: &str) -> Result<(), anyhow::Error> {
+        let get_object = self.client.get_object()
+            .bucket(bucket)
+            .key(key.clone())
+            .send()
+            .await
+            .context("send get object request")?;
+        let body = get_object
+            .body
+            .collect()
+            .await
+            .context("collect body")?;
+        let local_path = std::path::Path::new(&local_dir).join(key.clone());
+        log!(Level::Info, "Downloading {} to {}", key, local_path.display());
+        //create subdirectories if they don't exist
+        if let Some(parent) = local_path.parent() {
+            std::fs::create_dir_all(parent).context("create directory")?;
+        }
+        let mut file = File::create(local_path).await.context("create file")?;
+        file.write_all(&body.into_bytes()).await.context("write to file")?;
         Ok(())
     }
 
@@ -87,7 +105,7 @@ impl Downloader {
     }
 
     //remove all files and subdirs in directory local_dir
-    fn clear_dir(&self) -> Result<(), anyhow::Error> {
+    pub fn clear_dir(&self) -> Result<(), anyhow::Error> {
         let local_dir = std::path::Path::new(&self.local_dir);
         if local_dir.exists() {
             for entry in std::fs::read_dir(local_dir).context("read directory")? {
