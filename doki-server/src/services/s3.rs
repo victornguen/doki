@@ -1,3 +1,4 @@
+use crate::settings::settings;
 use anyhow::Context;
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
@@ -74,17 +75,17 @@ impl Downloader {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn manage(downloader: Downloader) -> AdHoc {
         AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
-            // let downloader = Downloader::new().await;
             rocket.manage(downloader)
         })
     }
 
-    pub fn managed(bucket: String, local_dir: String) -> AdHoc {
+    pub fn managed(settings: settings::S3, local_dir: String) -> AdHoc {
         AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
-            let downloader = Downloader::new(bucket.as_str(), local_dir.as_str()).await;
-            log!(Level::Info, "Start downloading bucket {} to {}", bucket, local_dir);
+            let downloader = Downloader::new(settings.endpoint.as_str(), settings.bucket.as_str(), local_dir.as_str(), settings.force_path_style).await;
+            log!(Level::Info, "Start downloading bucket {} to {}", settings.bucket, local_dir);
             downloader.clean_download().await.expect("Failed to download files");
             rocket.manage(downloader)
         })
@@ -94,13 +95,14 @@ impl Downloader {
     // AWS_ACCESS_KEY_ID
     // AWS_SECRET_ACCESS_KEY
     // AWS_REGION
-    pub async fn new(bucket: &str, local_dir: &str) -> Self {
+    pub async fn new(endpoint: &str, bucket: &str, local_dir: &str, force_path_style: bool) -> Self {
         let config = aws_config::defaults(BehaviorVersion::v2024_03_28())
-            // .endpoint_url("https://innovations-cloud.avlab.dev")
+            .endpoint_url(endpoint)
             .load()
             .await;
-        let client = Client::new(&config);
-        log!(Level::Info, "Connected to S3");
+        let config = aws_sdk_s3::config::Builder::from(&config).force_path_style(force_path_style).build();
+        log!(Level::Info, "S3 endpoint: {}", endpoint);
+        let client = Client::from_conf(config);
         Self { client, bucket: bucket.to_string(), local_dir: local_dir.to_string() }
     }
 

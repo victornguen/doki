@@ -13,8 +13,11 @@ use crate::settings::settings::Settings;
 use clap::{Arg, Command};
 use log::LevelFilter;
 use rocket::fs::FileServer;
+use rocket::log::LogLevel;
 use rocket::Config;
+use std::net::Ipv4Addr;
 use std::path::Path;
+use std::rc::Rc;
 use std::str::FromStr;
 
 #[launch]
@@ -31,12 +34,17 @@ async fn rocket() -> _ {
     let matches = command.get_matches();
     let config_location = matches.get_one::<String>("config").unwrap_or(&"".to_string()).to_string();
     let settings = Settings::new(&config_location, "DOKI").expect("Failed to load settings");
+    let settings = Rc::new(settings);
 
-    log::set_max_level(LevelFilter::from_str(settings.logging.log_level.as_str()).expect("Failed to set log level"));
+    let log_level = LogLevel::from_str(settings.clone().logging.log_level.as_str()).expect("Failed to parse log level");
+
+    log::set_max_level(LevelFilter::from(log_level));
 
     let config = Config {
         port: settings.server.port as u16,
         temp_dir: settings.fs.temp_dir.clone().into(),
+        address: Ipv4Addr::from_str(settings.server.host.clone().as_str()).expect("Failed to parse host").into(),
+        log_level,
         ..Config::default()
     };
 
@@ -49,8 +57,7 @@ async fn rocket() -> _ {
         .configure(config)
         .mount("/", FileServer::from(statics.clone()))
         .mount("/api/admin", api::admin::Api::routes())
-        .attach(Downloader::managed(settings.s3.bucket.to_string(), statics.clone().to_str().expect("Failed to convert path to string").to_string()))
+        .attach(Downloader::managed(settings.s3.clone(), statics.clone().to_string_lossy().to_string()))
         .attach(BasicAuthorizer::managed(settings.auth.clone()))
         .attach(state::AppState::managed(Path::new(&local_dir).into(), Path::new(&temp_dir).into()))
-        .attach(Settings::manage(settings.clone()))
 }
