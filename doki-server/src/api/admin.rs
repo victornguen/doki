@@ -6,6 +6,7 @@ use log::{log, Level};
 use rocket::fs::TempFile;
 use rocket::{Route, State};
 use std::path::Path;
+use std::rc::Rc;
 
 pub struct Api;
 
@@ -51,6 +52,7 @@ async fn handle_upload(
         rocket::http::Status::InternalServerError
     })?;
     let backup_path = state.temp_dir.join(format!("backup-{}.tar.gz", uuid));
+    let backup_path = Rc::from(backup_path.as_path());
     archive::pack_tar_gz(&state.local_dir, &backup_path, flate2::Compression::fast()).map_err(|e| {
         log!(Level::Error, "Failed to make backup: {}", e);
         rocket::http::Status::InternalServerError
@@ -62,8 +64,11 @@ async fn handle_upload(
     unpack_fn(&path, &state.local_dir).map_err(|e| {
         log!(Level::Error, "Failed to unpack archive: {}", e);
         archive::unpack_tar_gz(&backup_path, &state.local_dir).expect("Failed to restore backup");
+        let backup_path = &backup_path.clone();
+        let _ = std::fs::remove_file(&backup_path);
         rocket::http::Status::InternalServerError
     })?;
+    let _ = std::fs::remove_file(backup_path);
     let _ = std::fs::remove_file(path);
     Ok(())
 }
