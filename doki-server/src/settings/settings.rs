@@ -20,7 +20,9 @@ pub struct Logging {
 
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct S3 {
+    pub endpoint: String,
     pub bucket: String,
+    pub force_path_style: bool,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -47,11 +49,5 @@ impl Settings {
             .build()?;
         let settings = s.try_deserialize()?;
         Ok(settings)
-    }
-
-    pub fn manage(settings: Settings) -> rocket::fairing::AdHoc {
-        rocket::fairing::AdHoc::on_ignite("Settings", move |rocket| async move {
-            rocket.manage(settings)
-        })
     }
 }

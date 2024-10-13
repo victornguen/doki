@@ -12,7 +12,7 @@ pub struct Api;
 
 impl Api {
     pub fn routes() -> Vec<Route> {
-        routes![update, upload_tar_gz, upload_rar]
+        routes![update, upload_tar_gz, upload_zip]
     }
 }
 
@@ -32,10 +32,10 @@ pub async fn upload_tar_gz(_user: AdminUser, file: TempFile<'_>, state: &State<A
     handle_upload(file, state, downloader, "tar.gz", archive::unpack_tar_gz).await
 }
 
-/// Route that takes an archive file(rar) and extracts it to the local directory
-#[post("/upload", data = "<file>", format = "application/vnd.rar", rank = 2)]
-pub async fn upload_rar(_user: AdminUser, file: TempFile<'_>, state: &State<AppState>, downloader: &State<Downloader>) -> Result<(), rocket::http::Status> {
-    handle_upload(file, state, downloader, "rar", archive::unpack_rar).await
+/// Route that takes an archive file(zip) and extracts it to the local directory
+#[post("/upload", data = "<file>", format = "application/zip", rank = 2)]
+pub async fn upload_zip(_user: AdminUser, file: TempFile<'_>, state: &State<AppState>, downloader: &State<Downloader>) -> Result<(), rocket::http::Status> {
+    handle_upload(file, state, downloader, "rar", archive::unpack_zip).await
 }
 
 async fn handle_upload(

@@ -4,7 +4,9 @@ server:
 logging:
   log_level: DEBUG
 s3:
+  endpoint: http://localhost:9000
   bucket: aggapi-documentation
+  force_path_style: true
 fs:
   local_dir: www/public
   statics: site
