@@ -28,13 +28,23 @@ pub async fn update(_user: AdminUser, downloader: &State<Downloader>) -> Result<
 
 /// Route that takes an archive file(tar) and extracts it to the local directory
 #[post("/upload", data = "<file>", format = "application/gzip")]
-pub async fn upload_tar_gz(_user: AdminUser, file: TempFile<'_>, state: &State<AppState>, downloader: &State<Downloader>) -> Result<(), rocket::http::Status> {
+pub async fn upload_tar_gz(
+    _user: AdminUser,
+    file: TempFile<'_>,
+    state: &State<AppState>,
+    downloader: &State<Downloader>,
+) -> Result<(), rocket::http::Status> {
     handle_upload(file, state, downloader, "tar.gz", archive::unpack_tar_gz).await
 }
 
 /// Route that takes an archive file(zip) and extracts it to the local directory
 #[post("/upload", data = "<file>", format = "application/zip", rank = 2)]
-pub async fn upload_zip(_user: AdminUser, file: TempFile<'_>, state: &State<AppState>, downloader: &State<Downloader>) -> Result<(), rocket::http::Status> {
+pub async fn upload_zip(
+    _user: AdminUser,
+    file: TempFile<'_>,
+    state: &State<AppState>,
+    downloader: &State<Downloader>,
+) -> Result<(), rocket::http::Status> {
     handle_upload(file, state, downloader, "rar", archive::unpack_zip).await
 }
 

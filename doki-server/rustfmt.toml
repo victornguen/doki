@@ -6,3 +6,7 @@ edition = "2021"
 reorder_imports = true
 reorder_modules = true
 use_try_shorthand = true
+#fn_single_line = true
+#brace_style = "SameLineWhere"
+#combine_control_expr = false
+fn_call_width = 90

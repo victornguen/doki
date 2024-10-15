@@ -26,18 +26,19 @@ pub fn unpack_tar_gz(tarball: &Path, target: &Path) -> Result<(), Error> {
                     unpacked += 1;
                     Ok((save_path, entry.size()))
                 }
-                _ => { Err(Error::msg("")) }
+                _ => Err(Error::msg("")),
             }
         })
         .filter_map(|e: Result<(PathBuf, u64), Error>| e.ok())
-        .for_each(|(x, size)|
-            if x.is_file() { log!(Level::Info, "> Extracted {} ({}) into {}", x.display(), size, target.display()) }
-        );
+        .for_each(|(x, size)| {
+            if x.is_file() {
+                log!(Level::Info, "> Extracted {} ({}) into {}", x.display(), size, target.display())
+            }
+        });
 
     log!(Level::Info, "Extracted {} files", unpacked);
     Ok(())
 }
-
 
 /// Packs a target directory into a tarball
 pub fn pack_tar_gz(target: &Path, tarball: &Path, level: Compression) -> Result<(), Error> {
@@ -50,7 +51,6 @@ pub fn pack_tar_gz(target: &Path, tarball: &Path, level: Compression) -> Result<
 
     Ok(())
 }
-
 
 /// Unpacks a zip archive to a target directory
 pub fn unpack_zip(zip: &Path, target: &Path) -> Result<(), Error> {
@@ -66,7 +66,9 @@ pub fn unpack_zip(zip: &Path, target: &Path) -> Result<(), Error> {
             std::fs::create_dir_all(save_path.clone())?;
         } else {
             if let Some(parent) = save_path.clone().parent() {
-                if !parent.exists() { std::fs::create_dir_all(parent)?; }
+                if !parent.exists() {
+                    std::fs::create_dir_all(parent)?;
+                }
             }
             let mut out = File::create(save_path.clone())?;
             std::io::copy(&mut file, &mut out)?;

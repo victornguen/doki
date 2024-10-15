@@ -60,7 +60,11 @@ impl Settings {
             builder = builder.add_source(File::with_name(location));
         }
 
-        builder = builder.add_source(Environment::with_prefix(env_prefix).separator("__").prefix_separator("__"));
+        builder = builder.add_source(
+            Environment::with_prefix(env_prefix)
+                .separator("__")
+                .prefix_separator("__"),
+        );
 
         let settings = builder.build()?.try_deserialize()?;
         Ok(settings)

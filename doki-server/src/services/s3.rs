@@ -19,7 +19,9 @@ pub struct Downloader {
 impl Downloader {
     pub async fn clean_download(&self) -> Result<(), anyhow::Error> {
         self.clear_dir()?;
-        self.clone().download_directory(self.bucket.as_str(), self.local_dir.as_str()).await
+        self.clone()
+            .download_directory(self.bucket.as_str(), self.local_dir.as_str())
+            .await
     }
 
     async fn download_directory(&self, bucket: &str, local_dir: &str) -> Result<(), anyhow::Error> {
@@ -40,11 +42,7 @@ impl Downloader {
                     let bucket = bucket.to_string();
                     let key = key.clone();
                     let local_dir = Arc::clone(&local_dir);
-                    tasks.push(
-                        tokio::spawn(async move {
-                            s.download_file(bucket, key, &local_dir).await
-                        })
-                    );
+                    tasks.push(tokio::spawn(async move { s.download_file(bucket, key, &local_dir).await }));
                 }
             }
             join_all(tasks).await.into_iter().collect::<Result<Vec<_>, _>>()?;
@@ -53,17 +51,15 @@ impl Downloader {
         Ok(())
     }
     async fn download_file(&self, bucket: String, key: String, local_dir: &str) -> Result<(), anyhow::Error> {
-        let get_object = self.client.get_object()
+        let get_object = self
+            .client
+            .get_object()
             .bucket(bucket)
             .key(key.clone())
             .send()
             .await
             .context("send get object request")?;
-        let body = get_object
-            .body
-            .collect()
-            .await
-            .context("collect body")?;
+        let body = get_object.body.collect().await.context("collect body")?;
         let local_path = std::path::Path::new(&local_dir).join(key.clone());
         log!(Level::Info, "Downloading {} to {}", key, local_path.display());
         //create subdirectories if they don't exist
@@ -77,14 +73,18 @@ impl Downloader {
 
     #[allow(dead_code)]
     pub fn manage(downloader: Downloader) -> AdHoc {
-        AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
-            rocket.manage(downloader)
-        })
+        AdHoc::on_ignite("S3 Downloader", move |rocket| async move { rocket.manage(downloader) })
     }
 
     pub fn managed(settings: settings::S3, local_dir: String) -> AdHoc {
         AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
-            let downloader = Downloader::new(settings.endpoint.as_str(), settings.bucket.as_str(), local_dir.as_str(), settings.force_path_style).await;
+            let downloader = Downloader::new(
+                settings.endpoint.as_str(),
+                settings.bucket.as_str(),
+                local_dir.as_str(),
+                settings.force_path_style,
+            )
+            .await;
             log!(Level::Info, "Start downloading bucket {} to {}", settings.bucket, local_dir);
             if settings.load_on_start {
                 downloader.clean_download().await.expect("Failed to download files");
@@ -102,10 +102,16 @@ impl Downloader {
             .endpoint_url(endpoint)
             .load()
             .await;
-        let config = aws_sdk_s3::config::Builder::from(&config).force_path_style(force_path_style).build();
+        let config = aws_sdk_s3::config::Builder::from(&config)
+            .force_path_style(force_path_style)
+            .build();
         log!(Level::Info, "S3 endpoint: {}", endpoint);
         let client = Client::from_conf(config);
-        Self { client, bucket: bucket.to_string(), local_dir: local_dir.to_string() }
+        Self {
+            client,
+            bucket: bucket.to_string(),
+            local_dir: local_dir.to_string(),
+        }
     }
 
     //remove all files and subdirs in directory local_dir

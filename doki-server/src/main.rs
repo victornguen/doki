@@ -25,14 +25,19 @@ async fn rocket() -> _ {
     let command = Command::new("Documentation hosting")
         .version("0.1.0")
         .about("Documentation hosting service, that downloads documentation from S3 and serves it")
-        .arg(Arg::new("config")
-            .short('c')
-            .long("config")
-            .help("Configuration file location")
-            .default_value("config.yaml"));
+        .arg(
+            Arg::new("config")
+                .short('c')
+                .long("config")
+                .help("Configuration file location")
+                .default_value("config.yaml"),
+        );
 
     let matches = command.get_matches();
-    let config_location = matches.get_one::<String>("config").unwrap_or(&"".to_string()).to_string();
+    let config_location = matches
+        .get_one::<String>("config")
+        .unwrap_or(&"".to_string())
+        .to_string();
     let settings = Settings::new(&config_location, "DOKI").expect("Failed to load settings");
     let settings = Rc::new(settings);
 
@@ -43,7 +48,9 @@ async fn rocket() -> _ {
     let config = Config {
         port: settings.server.port as u16,
         temp_dir: settings.fs.temp_dir.clone().into(),
-        address: Ipv4Addr::from_str(settings.server.host.clone().as_str()).expect("Failed to parse host").into(),
+        address: Ipv4Addr::from_str(settings.server.host.clone().as_str())
+            .expect("Failed to parse host")
+            .into(),
         log_level,
         ..Config::default()
     };
@@ -51,7 +58,6 @@ async fn rocket() -> _ {
     let local_dir = settings.fs.local_dir.clone();
     let temp_dir = settings.fs.temp_dir.clone();
     let statics = Path::new(local_dir.as_str()).join(settings.fs.statics.as_str());
-
 
     rocket::build()
         .configure(config)

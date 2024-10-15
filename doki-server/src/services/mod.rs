@@ -1,3 +1,3 @@
-pub mod s3;
-pub mod auth;
 pub mod archive;
+pub mod auth;
+pub mod s3;
