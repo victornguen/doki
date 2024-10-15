@@ -23,7 +23,7 @@ use std::str::FromStr;
 #[launch]
 async fn rocket() -> _ {
     let command = Command::new("Documentation hosting")
-        .version("1.0")
+        .version("0.1.0")
         .about("Documentation hosting service, that downloads documentation from S3 and serves it")
         .arg(Arg::new("config")
             .short('c')
