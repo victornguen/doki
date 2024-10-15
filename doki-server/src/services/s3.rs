@@ -86,7 +86,9 @@ impl Downloader {
         AdHoc::on_ignite("S3 Downloader", move |rocket| async move {
             let downloader = Downloader::new(settings.endpoint.as_str(), settings.bucket.as_str(), local_dir.as_str(), settings.force_path_style).await;
             log!(Level::Info, "Start downloading bucket {} to {}", settings.bucket, local_dir);
-            downloader.clean_download().await.expect("Failed to download files");
+            if settings.load_on_start {
+                downloader.clean_download().await.expect("Failed to download files");
+            }
             rocket.manage(downloader)
         })
     }

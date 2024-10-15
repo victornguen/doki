@@ -23,6 +23,8 @@ pub struct S3 {
     pub endpoint: String,
     pub bucket: String,
     pub force_path_style: bool,
+    /// Whether to load the documentation on start
+    pub load_on_start: bool,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]

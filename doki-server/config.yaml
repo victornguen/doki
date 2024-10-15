@@ -7,6 +7,7 @@ s3:
   endpoint: http://localhost:9000
   bucket: aggapi-documentation
   force_path_style: true
+  load_on_start: true
 fs:
   local_dir: www/public
   statics: site
